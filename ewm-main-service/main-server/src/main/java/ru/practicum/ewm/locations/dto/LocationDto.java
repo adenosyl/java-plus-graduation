@@ -1,0 +1,18 @@
+package ru.practicum.ewm.locations.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
+@Setter
+public class LocationDto {
+    private Long id;
+    private String name;
+    private Double lat;
+    private Double lon;
+    private Integer radiusMeters;
+}

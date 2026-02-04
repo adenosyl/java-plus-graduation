@@ -69,3 +69,11 @@ CREATE TABLE IF NOT EXISTS participation_requests
     CONSTRAINT chk_request_status CHECK (status IN ('PENDING', 'CONFIRMED', 'REJECTED', 'CANCELED'))
 );
 
+-- LOCATIONS
+CREATE TABLE IF NOT EXISTS locations (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    lat DOUBLE PRECISION NOT NULL,
+    lon DOUBLE PRECISION NOT NULL,
+    radius_meters INT NOT NULL CHECK (radius_meters > 0)
+);
