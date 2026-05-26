@@ -6,6 +6,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 import ru.practicum.stats.dto.EndpointHitDto;
@@ -24,12 +26,30 @@ class StatsClientTest {
 
     @Mock
     private RestTemplate restTemplate;
+
+    @Mock
+    private DiscoveryClient discoveryClient;
+
+    @Mock
+    private ServiceInstance serviceInstance;
+
     private StatsClient statsClient;
 
     @BeforeEach
     void setUp() throws Exception {
+
         RestTemplateBuilder builder = new RestTemplateBuilder();
-        statsClient = new StatsClient("http://localhost:9090", builder);
+
+        when(discoveryClient.getInstances("STATS-SERVER"))
+                .thenReturn(List.of(serviceInstance));
+
+        when(serviceInstance.getHost())
+                .thenReturn("localhost");
+
+        when(serviceInstance.getPort())
+                .thenReturn(9090);
+
+        statsClient = new StatsClient(discoveryClient, builder);
 
         Field restField = BaseClient.class.getDeclaredField("rest");
         restField.setAccessible(true);
@@ -46,7 +66,7 @@ class StatsClientTest {
                 .build();
 
         when(restTemplate.exchange(
-                eq("/hit"),
+                anyString(),
                 eq(HttpMethod.POST),
                 any(HttpEntity.class),
                 eq(Object.class)
@@ -99,6 +119,7 @@ class StatsClientTest {
 
     @Test
     void getStats_shouldHandleServerError() {
+
         LocalDateTime start = LocalDateTime.of(2024, 1, 1, 0, 0);
         LocalDateTime end = LocalDateTime.of(2024, 1, 31, 23, 59);
 
