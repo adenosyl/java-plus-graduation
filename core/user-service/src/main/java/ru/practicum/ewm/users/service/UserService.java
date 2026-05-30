@@ -15,4 +15,6 @@ public interface UserService {
     void deleteUser(Long userId);
 
     void validateUserCreation(NewUserDto newUserDto);
+
+    UserDto getUserById(Long userId);
 }

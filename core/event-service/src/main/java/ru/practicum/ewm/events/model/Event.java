@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import ru.practicum.ewm.category.model.Category;
-import ru.practicum.ewm.users.model.User;
 
 import java.time.LocalDateTime;
 
@@ -31,9 +30,8 @@ public class Event {
     @JoinColumn(name = "category_id")
     private Category category;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "initiator_id")
-    private User initiator;
+    @Column(name = "initiator_id", nullable = false)
+    private Long initiatorId;
 
     @Embedded
     @AttributeOverrides({

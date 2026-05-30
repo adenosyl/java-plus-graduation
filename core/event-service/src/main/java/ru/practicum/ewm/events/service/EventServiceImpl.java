@@ -8,20 +8,23 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.ewm.category.model.Category;
 import ru.practicum.ewm.category.repository.CategoryRepository;
+import ru.practicum.ewm.client.RequestFeignClient;
+import ru.practicum.ewm.client.UserFeignClient;
+import ru.practicum.ewm.dto.EventRequestStatusUpdateRequest;
+import ru.practicum.ewm.dto.EventRequestStatusUpdateResult;
 import ru.practicum.ewm.events.dto.*;
 import ru.practicum.ewm.events.mapper.EventMapper;
-import ru.practicum.ewm.events.mapper.RequestMapper;
 import ru.practicum.ewm.events.model.*;
 import ru.practicum.ewm.events.repository.EventRepository;
 import ru.practicum.ewm.events.repository.EventSpecifications;
-import ru.practicum.ewm.events.repository.ParticipationRequestRepository;
 import ru.practicum.ewm.events.util.DateTimeUtil;
 import ru.practicum.ewm.events.util.OffsetBasedPageRequest;
 import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.exception.NotFoundException;
-import ru.practicum.ewm.users.model.User;
-import ru.practicum.ewm.users.repository.UserRepository;
+import ru.practicum.ewm.dto.ParticipationRequestDto;
+import ru.practicum.ewm.dto.EventDto;
+
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -32,10 +35,9 @@ import java.util.*;
 public class EventServiceImpl implements EventService {
 
     private final EventRepository eventRepository;
-    private final ParticipationRequestRepository requestRepository;
-
-    private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+    private final UserFeignClient userFeignClient;
+    private final RequestFeignClient requestFeignClient;
 
     private final StatsFacade statsFacade;
 
@@ -74,11 +76,28 @@ public class EventServiceImpl implements EventService {
                 .and(EventSpecifications.categoryIn(categories))
                 .and(EventSpecifications.paid(paid))
                 .and(EventSpecifications.eventDateAfter(start))
-                .and(EventSpecifications.eventDateBefore(end))
-                .and(EventSpecifications.onlyAvailable(onlyAvailable));
+                .and(EventSpecifications.eventDateBefore(end));
 
         if (sort == PublicEventSort.VIEWS) {
             List<Event> all = eventRepository.findAll(spec);
+
+            if (Boolean.TRUE.equals(onlyAvailable)) {
+                Map<Long, Long> confirmedMap = getConfirmedMap(all);
+
+                all = all.stream()
+                        .filter(event -> {
+                            if (event.getParticipantLimit() == 0) {
+                                return true;
+                            }
+
+                            long confirmed =
+                                    confirmedMap.getOrDefault(event.getId(), 0L);
+
+                            return confirmed < event.getParticipantLimit();
+                        })
+                        .toList();
+            }
+
             List<EventShortDto> mapped = toShortDtosWithMeta(all);
             mapped.sort(
                     Comparator.comparingLong((EventShortDto d) -> d.getViews() == null ? 0L : d.getViews())
@@ -93,6 +112,24 @@ public class EventServiceImpl implements EventService {
         OffsetBasedPageRequest pageable = new OffsetBasedPageRequest(from, size, dbSort);
 
         List<Event> page = eventRepository.findAll(spec, pageable).getContent();
+
+        if (Boolean.TRUE.equals(onlyAvailable)) {
+
+            Map<Long, Long> confirmedMap = getConfirmedMap(page);
+
+            page = page.stream()
+                    .filter(event -> {
+                        if (event.getParticipantLimit() == 0) {
+                            return true;
+                        }
+
+                        long confirmed =
+                                confirmedMap.getOrDefault(event.getId(), 0L);
+
+                        return confirmed < event.getParticipantLimit();
+                    })
+                    .toList();
+        }
         return toShortDtosWithMeta(page);
     }
 
@@ -115,7 +152,7 @@ public class EventServiceImpl implements EventService {
 
         OffsetBasedPageRequest pageable = new OffsetBasedPageRequest(from, size, Sort.by("id").ascending());
         List<Event> events = eventRepository.findAll(
-                (root, query, cb) -> cb.equal(root.get("initiator").get("id"), userId),
+                (root, query, cb) -> cb.equal(root.get("initiatorId"), userId),
                 pageable
         ).getContent();
 
@@ -125,11 +162,11 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public EventFullDto addEvent(long userId, NewEventDto dto) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + userId + " не найден!"));
-
-        Category category = categoryRepository.findById(dto.getCategory())
-                .orElseThrow(() -> new NotFoundException("Категория с id=" + userId + " не найдена!"));
+                Category category = categoryRepository.findById(dto.getCategory())
+                        .orElseThrow(() ->
+                                new NotFoundException(
+                                        "Категория с id=" + dto.getCategory() + " не найдена!"
+                                ));
 
         // правило Swagger: не раньше чем через 2 часа
         if (dto.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
@@ -141,7 +178,7 @@ public class EventServiceImpl implements EventService {
         e.setAnnotation(dto.getAnnotation());
         e.setDescription(dto.getDescription());
         e.setCategory(category);
-        e.setInitiator(user);
+        e.setInitiatorId(userId);
         e.setLocation(EventMapper.toEmb(dto.getLocation()));
         e.setEventDate(dto.getEventDate());
 
@@ -168,7 +205,7 @@ public class EventServiceImpl implements EventService {
         Event e = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Событие с id=" + userId + " не найдено!"));
 
-        if (!Objects.equals(e.getInitiator().getId(), userId)) {
+        if (!Objects.equals(e.getInitiatorId(), userId)) {
             throw new NotFoundException("Событие с id=" + userId + " не найдено!");
         }
 
@@ -183,7 +220,7 @@ public class EventServiceImpl implements EventService {
         Event e = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Событие с id=" + userId + " не найдено!"));
 
-        if (!Objects.equals(e.getInitiator().getId(), userId)) {
+        if (!Objects.equals(e.getInitiatorId(), userId)) {
             throw new NotFoundException("Событие с id=" + userId + " не найдено!");
         }
 
@@ -207,97 +244,38 @@ public class EventServiceImpl implements EventService {
         ensureUserExists(userId);
 
         Event e = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Событие с id=" + userId + " не найдено!"));
+                .orElseThrow(() -> new NotFoundException("Событие с id=" + eventId + " не найдено!"));
 
-        if (!Objects.equals(e.getInitiator().getId(), userId)) {
-            throw new NotFoundException("Событие с id=" + userId + " не найдено!");
+        if (!Objects.equals(e.getInitiatorId(), userId)) {
+            throw new NotFoundException("Событие с id=" + eventId + " не найдено!");
         }
 
-        return requestRepository.findAllByEvent_IdOrderByIdAsc(eventId)
-                .stream()
-                .map(RequestMapper::toDto)
-                .toList();
+        return requestFeignClient.getEventRequests(eventId);
     }
 
     @Override
     @Transactional
-    public EventRequestStatusUpdateResult changeRequestStatus(long userId, long eventId, EventRequestStatusUpdateRequest dto) {
+    public EventRequestStatusUpdateResult changeRequestStatus(
+            long userId,
+            long eventId,
+            EventRequestStatusUpdateRequest dto) {
+
         ensureUserExists(userId);
 
-        Event e = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Событие с id=" + userId + " не найдено!"));
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "Событие с id=" + eventId + " не найдено!"
+                        ));
 
-        if (!Objects.equals(e.getInitiator().getId(), userId)) {
-            throw new NotFoundException("Событие с id=" + userId + " не найдено!");
+        if (!Objects.equals(event.getInitiatorId(), userId)) {
+            throw new NotFoundException(
+                    "Событие с id=" + eventId + " не найдено!"
+            );
         }
 
-        List<ParticipationRequest> requests = requestRepository.findAllByIdIn(dto.getRequestIds());
-        if (requests.size() != dto.getRequestIds().size()) {
-            throw new NotFoundException("Не все запросы были найдены.");
-        }
-
-        for (ParticipationRequest r : requests) {
-            if (!Objects.equals(r.getEvent().getId(), eventId)) {
-                throw new ConflictException("Запрос не принадлежит указанному событию!");
-            }
-            if (r.getStatus() != RequestStatus.PENDING) {
-                throw new ConflictException("Изменение статуса допускается исключительно для запросов в статусе PENDING!");
-            }
-        }
-
-        EventRequestStatusUpdateResult result = new EventRequestStatusUpdateResult();
-
-        // если лимит 0 или модерация выключена — подтверждение не требуется
-        if (e.getParticipantLimit() == 0 || !Boolean.TRUE.equals(e.getRequestModeration())) {
-            for (ParticipationRequest r : requests) {
-                if (dto.getStatus() == RequestUpdateStatus.CONFIRMED) {
-                    r.setStatus(RequestStatus.CONFIRMED);
-                    result.getConfirmedRequests().add(RequestMapper.toDto(r));
-                } else {
-                    r.setStatus(RequestStatus.REJECTED);
-                    result.getRejectedRequests().add(RequestMapper.toDto(r));
-                }
-            }
-            requestRepository.saveAll(requests);
-            return result;
-        }
-
-        long confirmed = requestRepository.countByEvent_IdAndStatus(eventId, RequestStatus.CONFIRMED);
-        int limit = e.getParticipantLimit();
-
-        if (dto.getStatus() == RequestUpdateStatus.CONFIRMED) {
-            for (ParticipationRequest r : requests) {
-                if (confirmed >= limit) {
-                    throw new ConflictException("Превышено допустимое количество участников!");
-                }
-                r.setStatus(RequestStatus.CONFIRMED);
-                confirmed++;
-                result.getConfirmedRequests().add(RequestMapper.toDto(r));
-            }
-            requestRepository.saveAll(requests);
-
-            // если лимит исчерпан — отклонить все оставшиеся pending
-            if (confirmed >= limit) {
-                List<ParticipationRequest> pending = requestRepository.findAllByEvent_IdAndStatus(eventId, RequestStatus.PENDING);
-                for (ParticipationRequest p : pending) {
-                    p.setStatus(RequestStatus.REJECTED);
-                }
-                requestRepository.saveAll(pending);
-            }
-
-            return result;
-        }
-
-        // REJECTED
-        for (ParticipationRequest r : requests) {
-            r.setStatus(RequestStatus.REJECTED);
-            result.getRejectedRequests().add(RequestMapper.toDto(r));
-        }
-        requestRepository.saveAll(requests);
-        return result;
+        return requestFeignClient.changeRequestStatus(eventId, dto);
     }
-
-    //ADMIN
 
     @Override
     public List<EventFullDto> searchAdmin(List<Long> users,
@@ -337,12 +315,23 @@ public class EventServiceImpl implements EventService {
         return toFullDtoWithMeta(eventRepository.save(e));
     }
 
-    //helpers
+    @Override
+    @Transactional(readOnly = true)
+    public EventDto getInternalEvent(Long eventId) {
 
-    private void ensureUserExists(long userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new NotFoundException("Пользователь с id=" + userId + " не найден!");
-        }
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() ->
+                        new NotFoundException("Событие с id=" + eventId + " не найдено!")
+                );
+
+        EventDto dto = new EventDto();
+        dto.setId(event.getId());
+        dto.setInitiatorId(event.getInitiatorId());
+        dto.setParticipantLimit(event.getParticipantLimit());
+        dto.setRequestModeration(event.getRequestModeration());
+        dto.setState(event.getState().name());
+
+        return dto;
     }
 
     private void applyUserUpdate(Event e, UpdateEventUserRequest dto) {
@@ -418,7 +407,7 @@ public class EventServiceImpl implements EventService {
             EventShortDto dto = EventMapper.toShortDto(e);
 
             dto.setCategory(mapCategory(e.getCategory()));
-            dto.setInitiator(mapInitiator(e.getInitiator()));
+            dto.setInitiator(mapInitiator(e.getInitiatorId()));
 
             dto.setConfirmedRequests(confirmed.getOrDefault(e.getId(), 0L));
             dto.setViews(views.getOrDefault(e.getId(), 0L));
@@ -436,8 +425,7 @@ public class EventServiceImpl implements EventService {
             EventFullDto dto = EventMapper.toFullDto(e);
 
             dto.setCategory(mapCategory(e.getCategory()));
-            dto.setInitiator(mapInitiator(e.getInitiator()));
-
+            dto.setInitiator(mapInitiator(e.getInitiatorId()));
             dto.setConfirmedRequests(confirmed.getOrDefault(e.getId(), 0L));
             dto.setViews(views.getOrDefault(e.getId(), 0L));
             return dto;
@@ -450,23 +438,28 @@ public class EventServiceImpl implements EventService {
 
         EventFullDto dto = EventMapper.toFullDto(e);
         dto.setCategory(mapCategory(e.getCategory()));
-        dto.setInitiator(mapInitiator(e.getInitiator()));
+        dto.setInitiator(mapInitiator(e.getInitiatorId()));
         dto.setConfirmedRequests(confirmed.getOrDefault(e.getId(), 0L));
         dto.setViews(views.getOrDefault(e.getId(), 0L));
         return dto;
     }
 
     private Map<Long, Long> getConfirmedMap(List<Event> events) {
-        List<Long> ids = events.stream().map(Event::getId).toList();
-        List<Object[]> rows = requestRepository.countByEventIdsAndStatus(ids, RequestStatus.CONFIRMED);
 
-        Map<Long, Long> result = new HashMap<>();
-        for (Object[] r : rows) {
-            Long eventId = (Long) r[0];
-            Long cnt = (Long) r[1];
-            result.put(eventId, cnt);
+        if (events == null || events.isEmpty()) {
+            return Map.of();
         }
-        return result;
+
+        try {
+            List<Long> eventIds = events.stream()
+                    .map(Event::getId)
+                    .toList();
+
+            return requestFeignClient.getConfirmedCounts(eventIds);
+
+        } catch (Exception e) {
+            return Map.of();
+        }
     }
 
     private Map<Long, Long> getViewsMap(List<Event> events) {
@@ -496,10 +489,33 @@ public class EventServiceImpl implements EventService {
         return dto;
     }
 
-    private UserShortDto mapInitiator(User u) {
-        UserShortDto dto = new UserShortDto();
-        dto.setId(u.getId());
-        dto.setName(u.getName());
-        return dto;
+    private UserShortDto mapInitiator(Long userId) {
+
+        try {
+            ru.practicum.ewm.client.dto.UserDto user =
+                    userFeignClient.getUser(userId);
+
+            UserShortDto dto = new UserShortDto();
+            dto.setId(user.getId());
+            dto.setName(user.getName());
+
+            return dto;
+
+        } catch (Exception e) {
+
+            UserShortDto dto = new UserShortDto();
+            dto.setId(userId);
+            dto.setName("Unknown");
+
+            return dto;
+        }
+    }
+
+    private void ensureUserExists(long userId) {
+        try {
+            userFeignClient.getUser(userId);
+        } catch (NotFoundException e) {
+            throw e;
+        }
     }
 }

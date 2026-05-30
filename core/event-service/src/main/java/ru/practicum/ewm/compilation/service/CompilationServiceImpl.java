@@ -16,13 +16,10 @@ import ru.practicum.ewm.events.dto.EventShortDto;
 import ru.practicum.ewm.events.dto.UserShortDto;
 import ru.practicum.ewm.events.mapper.EventMapper;
 import ru.practicum.ewm.events.model.Event;
-import ru.practicum.ewm.events.model.RequestStatus;
 import ru.practicum.ewm.events.repository.EventRepository;
-import ru.practicum.ewm.events.repository.ParticipationRequestRepository;
 import ru.practicum.ewm.events.service.StatsFacade;
 import ru.practicum.ewm.events.util.OffsetBasedPageRequest;
 import ru.practicum.ewm.exception.NotFoundException;
-import ru.practicum.ewm.users.model.User;
 
 import java.util.*;
 
@@ -32,7 +29,6 @@ public class CompilationServiceImpl implements CompilationService {
 
     private final CompilationRepository compilationRepository;
     private final EventRepository eventRepository;
-    private final ParticipationRequestRepository requestRepository;
     private final StatsFacade statsFacade;
 
     @Override
@@ -130,7 +126,12 @@ public class CompilationServiceImpl implements CompilationService {
         return events.stream().map(e -> {
             EventShortDto dto = EventMapper.toShortDto(e);
             dto.setCategory(mapCategory(e.getCategory()));
-            dto.setInitiator(mapInitiator(e.getInitiator()));
+
+            UserShortDto initiator = new UserShortDto();
+            initiator.setId(e.getInitiatorId());
+            initiator.setName("unknown");
+            dto.setInitiator(initiator);
+
             dto.setConfirmedRequests(confirmed.getOrDefault(e.getId(), 0L));
             dto.setViews(views.getOrDefault(e.getId(), 0L));
             return dto;
@@ -138,16 +139,7 @@ public class CompilationServiceImpl implements CompilationService {
     }
 
     private Map<Long, Long> getConfirmedMap(List<Event> events) {
-        List<Long> ids = events.stream().map(Event::getId).toList();
-        List<Object[]> rows = requestRepository.countByEventIdsAndStatus(ids, RequestStatus.CONFIRMED);
-
-        Map<Long, Long> result = new HashMap<>();
-        for (Object[] r : rows) {
-            Long eventId = (Long) r[0];
-            Long cnt = (Long) r[1];
-            result.put(eventId, cnt);
-        }
-        return result;
+        return new HashMap<>();
     }
 
     private Map<Long, Long> getViewsMap(List<Event> events) {
@@ -168,13 +160,6 @@ public class CompilationServiceImpl implements CompilationService {
         CategoryDto dto = new CategoryDto();
         dto.setId(c.getId());
         dto.setName(c.getName());
-        return dto;
-    }
-
-    private UserShortDto mapInitiator(User u) {
-        UserShortDto dto = new UserShortDto();
-        dto.setId(u.getId());
-        dto.setName(u.getName());
         return dto;
     }
 }

@@ -1,9 +1,8 @@
-package ru.practicum.ewm.events.model;
+package ru.practicum.ewm.requests.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import ru.practicum.ewm.users.model.User;
 
 import java.time.LocalDateTime;
 
@@ -23,13 +22,11 @@ public class ParticipationRequest {
     @Column(nullable = false)
     private LocalDateTime created;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "event_id")
-    private Event event;
+    @Column(name = "event_id", nullable = false)
+    private Long eventId;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "requester_id")
-    private User requester;
+    @Column(name = "requester_id", nullable = false)
+    private Long requesterId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

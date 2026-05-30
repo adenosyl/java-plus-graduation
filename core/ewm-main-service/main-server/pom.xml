@@ -104,19 +104,7 @@
 
         <dependency>
             <groupId>ru.practicum</groupId>
-            <artifactId>user-service</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>ru.practicum</groupId>
             <artifactId>common</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>ru.practicum</groupId>
-            <artifactId>event-service</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

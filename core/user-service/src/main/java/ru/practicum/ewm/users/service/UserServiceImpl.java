@@ -64,6 +64,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserDto getUserById(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new NotFoundException("Пользователь с id=" + userId + " не найден!")
+                );
+
+        return userMapper.toUserDto(user);
+    }
+
+    @Override
     public void validateUserCreation(NewUserDto newUserDto) {
         if (newUserDto.getEmail() == null || newUserDto.getEmail().isBlank()) {
             throw new ValidationException("Email не может быть пустым");

@@ -9,10 +9,31 @@ spring:
     gateway:
       mvc:
         routes:
-          - id: ewm-main-service
-            uri: lb://EWM-MAIN-SERVICE
+
+          - id: user-service
+            uri: lb://USER-SERVICE
             predicates:
-              - Path=/**
+              - Path=/admin/users/**
+
+          - id: request-service
+            uri: lb://REQUEST-SERVICE
+            predicates:
+              - Path=/users/*/requests/**
+
+          - id: event-service-private
+            uri: lb://EVENT-SERVICE
+            predicates:
+              - Path=/users/*/events/**
+
+          - id: event-service-public
+            uri: lb://EVENT-SERVICE
+            predicates:
+              - Path=/events/**
+
+          - id: event-service-admin
+            uri: lb://EVENT-SERVICE
+            predicates:
+              - Path=/admin/events/**,/admin/categories/**
 
 eureka:
   client:

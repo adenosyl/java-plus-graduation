@@ -7,7 +7,7 @@ spring:
 
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/stats
+    url: jdbc:postgresql://host.docker.internal:5432/stats
     username: stats
     password: stats
 

@@ -1,7 +1,8 @@
-package ru.practicum.ewm.events.mapper;
+package ru.practicum.ewm.requests.mapper;
 
-import ru.practicum.ewm.events.dto.ParticipationRequestDto;
-import ru.practicum.ewm.events.model.ParticipationRequest;
+import ru.practicum.ewm.dto.ParticipationRequestDto;
+import ru.practicum.ewm.requests.model.ParticipationRequest;
+
 
 public final class RequestMapper {
 
@@ -12,9 +13,9 @@ public final class RequestMapper {
         ParticipationRequestDto dto = new ParticipationRequestDto();
         dto.setId(r.getId());
         dto.setCreated(r.getCreated());
-        dto.setEvent(r.getEvent().getId());
-        dto.setRequester(r.getRequester().getId());
-        dto.setStatus(r.getStatus());
+        dto.setEvent(r.getEventId());
+        dto.setRequester(r.getRequesterId());
+        dto.setStatus(r.getStatus().name());
         return dto;
     }
 }

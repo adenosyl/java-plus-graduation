@@ -1,14 +1,9 @@
 package ru.practicum.ewm.events.repository;
 
 import jakarta.persistence.criteria.Expression;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
-import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 import ru.practicum.ewm.events.model.Event;
 import ru.practicum.ewm.events.model.EventState;
-import ru.practicum.ewm.events.model.ParticipationRequest;
-import ru.practicum.ewm.events.model.RequestStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -58,26 +53,7 @@ public final class EventSpecifications {
         };
     }
 
-
-//onlyAvailable=true:
-//participantLimit == 0  => доступно всегда
-//иначе confirmedRequests < participantLimit
     public static Specification<Event> onlyAvailable(Boolean onlyAvailable) {
-        return (root, query, cb) -> {
-            if (onlyAvailable == null || !onlyAvailable) return cb.conjunction();
-
-            Predicate unlimited = cb.equal(root.get("participantLimit"), 0);
-
-            Subquery<Long> sub = query.subquery(Long.class);
-            Root<ParticipationRequest> reqRoot = sub.from(ParticipationRequest.class);
-            sub.select(cb.count(reqRoot.get("id")));
-            sub.where(
-                    cb.equal(reqRoot.get("event").get("id"), root.get("id")),
-                    cb.equal(reqRoot.get("status"), RequestStatus.CONFIRMED)
-            );
-
-            Predicate limitNotReached = cb.greaterThan(root.get("participantLimit"), sub);
-            return cb.or(unlimited, limitNotReached);
-        };
+        return (root, query, cb) -> cb.conjunction();
     }
 }

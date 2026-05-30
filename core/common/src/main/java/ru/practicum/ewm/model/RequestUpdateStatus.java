@@ -1,4 +1,4 @@
-package ru.practicum.ewm.events.model;
+package ru.practicum.ewm.model;
 
 public enum RequestUpdateStatus {
     CONFIRMED,
