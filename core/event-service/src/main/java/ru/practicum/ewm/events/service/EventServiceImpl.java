@@ -6,6 +6,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.ewm.category.model.Category;
+import ru.practicum.ewm.category.repository.CategoryRepository;
 import ru.practicum.ewm.events.dto.*;
 import ru.practicum.ewm.events.mapper.EventMapper;
 import ru.practicum.ewm.events.mapper.RequestMapper;
@@ -13,17 +15,13 @@ import ru.practicum.ewm.events.model.*;
 import ru.practicum.ewm.events.repository.EventRepository;
 import ru.practicum.ewm.events.repository.EventSpecifications;
 import ru.practicum.ewm.events.repository.ParticipationRequestRepository;
-import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.events.util.DateTimeUtil;
 import ru.practicum.ewm.events.util.OffsetBasedPageRequest;
-
+import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.exception.NotFoundException;
-
-import ru.practicum.ewm.users.repository.UserRepository;
-import ru.practicum.ewm.category.repository.CategoryRepository;
 import ru.practicum.ewm.users.model.User;
-import ru.practicum.ewm.category.model.Category;
+import ru.practicum.ewm.users.repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.*;

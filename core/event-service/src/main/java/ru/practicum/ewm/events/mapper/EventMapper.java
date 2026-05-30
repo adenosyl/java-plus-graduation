@@ -1,6 +1,8 @@
 package ru.practicum.ewm.events.mapper;
 
-import ru.practicum.ewm.events.dto.*;
+import ru.practicum.ewm.events.dto.EventFullDto;
+import ru.practicum.ewm.events.dto.EventShortDto;
+import ru.practicum.ewm.events.dto.Location;
 import ru.practicum.ewm.events.model.Event;
 import ru.practicum.ewm.events.model.GeoLocation;
 

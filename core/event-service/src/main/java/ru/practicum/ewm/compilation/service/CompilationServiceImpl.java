@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import ru.practicum.ewm.category.model.Category;
 import ru.practicum.ewm.compilation.dto.CompilationDto;
 import ru.practicum.ewm.compilation.dto.NewCompilationDto;
 import ru.practicum.ewm.compilation.dto.UpdateCompilationRequest;
@@ -21,7 +22,6 @@ import ru.practicum.ewm.events.repository.ParticipationRequestRepository;
 import ru.practicum.ewm.events.service.StatsFacade;
 import ru.practicum.ewm.events.util.OffsetBasedPageRequest;
 import ru.practicum.ewm.exception.NotFoundException;
-import ru.practicum.ewm.category.model.Category;
 import ru.practicum.ewm.users.model.User;
 
 import java.util.*;

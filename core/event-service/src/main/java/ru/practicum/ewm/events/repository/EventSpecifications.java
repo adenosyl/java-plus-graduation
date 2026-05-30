@@ -1,9 +1,15 @@
 package ru.practicum.ewm.events.repository;
 
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
-import ru.practicum.ewm.events.model.*;
+import ru.practicum.ewm.events.model.Event;
+import ru.practicum.ewm.events.model.EventState;
+import ru.practicum.ewm.events.model.ParticipationRequest;
+import ru.practicum.ewm.events.model.RequestStatus;
 
-import jakarta.persistence.criteria.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
