@@ -11,7 +11,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.ewm.users.dto.NewUserDto;
 import ru.practicum.ewm.users.dto.UserDto;
-import ru.practicum.ewm.users.model.service.UserService;
+import ru.practicum.ewm.users.service.UserService;
 
 import java.util.Collection;
 import java.util.List;

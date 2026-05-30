@@ -1,4 +1,4 @@
-package ru.practicum.ewm.users.model.service;
+package ru.practicum.ewm.users.service;
 
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
@@ -86,4 +86,3 @@ public class UserServiceImpl implements UserService {
         }
     }
 }
-
