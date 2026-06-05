@@ -127,10 +127,12 @@ public class CompilationServiceImpl implements CompilationService {
             EventShortDto dto = EventMapper.toShortDto(e);
             dto.setCategory(mapCategory(e.getCategory()));
 
-            UserShortDto initiator = new UserShortDto();
-            initiator.setId(e.getInitiatorId());
-            initiator.setName("unknown");
-            dto.setInitiator(initiator);
+            dto.setInitiator(
+                    new UserShortDto(
+                            e.getInitiatorId(),
+                            "unknown"
+                    )
+            );
 
             dto.setConfirmedRequests(confirmed.getOrDefault(e.getId(), 0L));
             dto.setViews(views.getOrDefault(e.getId(), 0L));
@@ -157,9 +159,9 @@ public class CompilationServiceImpl implements CompilationService {
     }
 
     private CategoryDto mapCategory(Category c) {
-        CategoryDto dto = new CategoryDto();
-        dto.setId(c.getId());
-        dto.setName(c.getName());
-        return dto;
+        return new CategoryDto(
+            c.getId(),
+            c.getName()
+        );
     }
 }

@@ -1,19 +1,4 @@
 services:
-    stats-server:
-      build:
-        context: .
-        dockerfile: ewm-stats-service/stats-server/Dockerfile
-      ports:
-        - "9090:9090"
-      depends_on:
-        - stats-db
-      environment:
-        DB_HOST: stats-db
-        DB_PORT: 5432
-        DB_NAME: stats
-        DB_USER: stats
-        DB_PASSWORD: stats
-
 
     stats-db:
       image: postgres:16.1
@@ -23,24 +8,6 @@ services:
         POSTGRES_PASSWORD: stats
       ports:
         - "5432:5432"
-
-    ewm-service:
-      build:
-        context: .
-        dockerfile: ewm-main-service/main-server/Dockerfile
-      ports:
-          - "8080:8080"
-      depends_on:
-        - ewm-db
-        - stats-server
-      environment:
-        DB_HOST: ewm-db
-        DB_PORT: 5432
-        DB_NAME: ewm
-        DB_USER: ewm
-        DB_PASSWORD: ewm
-
-        STATS_SERVER_URL: http://stats-server:9090
 
     ewm-db:
       image: postgres:16.1

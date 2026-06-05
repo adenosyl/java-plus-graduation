@@ -10,8 +10,7 @@ import ru.practicum.ewm.category.model.Category;
 import ru.practicum.ewm.category.repository.CategoryRepository;
 import ru.practicum.ewm.client.RequestFeignClient;
 import ru.practicum.ewm.client.UserFeignClient;
-import ru.practicum.ewm.dto.EventRequestStatusUpdateRequest;
-import ru.practicum.ewm.dto.EventRequestStatusUpdateResult;
+import ru.practicum.ewm.dto.*;
 import ru.practicum.ewm.events.dto.*;
 import ru.practicum.ewm.events.mapper.EventMapper;
 import ru.practicum.ewm.events.model.*;
@@ -22,8 +21,6 @@ import ru.practicum.ewm.events.util.OffsetBasedPageRequest;
 import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.exception.NotFoundException;
-import ru.practicum.ewm.dto.ParticipationRequestDto;
-import ru.practicum.ewm.dto.EventDto;
 
 
 import java.time.LocalDateTime;
@@ -324,14 +321,13 @@ public class EventServiceImpl implements EventService {
                         new NotFoundException("Событие с id=" + eventId + " не найдено!")
                 );
 
-        EventDto dto = new EventDto();
-        dto.setId(event.getId());
-        dto.setInitiatorId(event.getInitiatorId());
-        dto.setParticipantLimit(event.getParticipantLimit());
-        dto.setRequestModeration(event.getRequestModeration());
-        dto.setState(event.getState().name());
-
-        return dto;
+        return new EventDto(
+                event.getId(),
+                event.getInitiatorId(),
+                event.getParticipantLimit(),
+                event.getRequestModeration(),
+                EventStateDto.valueOf(event.getState().name())
+        );
     }
 
     private void applyUserUpdate(Event e, UpdateEventUserRequest dto) {
@@ -483,10 +479,10 @@ public class EventServiceImpl implements EventService {
     }
 
     private CategoryDto mapCategory(Category c) {
-        CategoryDto dto = new CategoryDto();
-        dto.setId(c.getId());
-        dto.setName(c.getName());
-        return dto;
+        return new CategoryDto(
+            c.getId(),
+            c.getName()
+        );
     }
 
     private UserShortDto mapInitiator(Long userId) {
@@ -495,19 +491,16 @@ public class EventServiceImpl implements EventService {
             ru.practicum.ewm.client.dto.UserDto user =
                     userFeignClient.getUser(userId);
 
-            UserShortDto dto = new UserShortDto();
-            dto.setId(user.getId());
-            dto.setName(user.getName());
-
-            return dto;
-
+            return new UserShortDto(
+                user.id(),
+                user.name()
+            );
         } catch (Exception e) {
 
-            UserShortDto dto = new UserShortDto();
-            dto.setId(userId);
-            dto.setName("Unknown");
-
-            return dto;
+            return new UserShortDto(
+                userId,
+                "Unknown"
+            );
         }
     }
 

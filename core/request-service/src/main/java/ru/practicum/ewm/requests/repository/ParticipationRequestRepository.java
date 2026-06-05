@@ -14,12 +14,15 @@ public interface ParticipationRequestRepository extends JpaRepository<Participat
     List<ParticipationRequest> findAllByEventIdOrderByIdAsc(Long eventId);
 
     @Query("""
-        select r.eventId as eventId, count(r.id) as cnt
-        from ParticipationRequest r
-        where r.eventId in :eventIds and r.status = :status
-        group by r.eventId
-    """)
-    List<Object[]> countByEventIdsAndStatus(Collection<Long> eventIds, RequestStatus status);
+    select r.eventId as eventId,
+           count(r.id) as cnt
+    from ParticipationRequest r
+    where r.eventId in :eventIds
+      and r.status = :status
+    group by r.eventId
+""")
+
+    List<EventConfirmedCount> countByEventIdsAndStatus(Collection<Long> eventIds, RequestStatus status);
 
     long countByEventIdAndStatus(Long eventId, RequestStatus status);
 

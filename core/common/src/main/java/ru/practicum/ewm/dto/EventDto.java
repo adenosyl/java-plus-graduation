@@ -1,13 +1,10 @@
 package ru.practicum.ewm.dto;
 
-import lombok.Data;
-
-@Data
-public class EventDto {
-
-    private Long id;
-    private Long initiatorId;
-    private Integer participantLimit;
-    private Boolean requestModeration;
-    private String state;
+public record EventDto(
+    Long id,
+    Long initiatorId,
+    Integer participantLimit,
+    Boolean requestModeration,
+    EventStateDto state
+) {
 }

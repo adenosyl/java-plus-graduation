@@ -4,15 +4,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.ewm.client.EventFeignClient;
-import ru.practicum.ewm.dto.EventDto;
-import ru.practicum.ewm.dto.EventRequestStatusUpdateRequest;
-import ru.practicum.ewm.dto.EventRequestStatusUpdateResult;
+import ru.practicum.ewm.dto.*;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.exception.NotFoundException;
-import ru.practicum.ewm.dto.ParticipationRequestDto;
+import ru.practicum.ewm.model.RequestUpdateStatus;
 import ru.practicum.ewm.requests.mapper.RequestMapper;
 import ru.practicum.ewm.requests.model.ParticipationRequest;
 import ru.practicum.ewm.requests.model.RequestStatus;
+import ru.practicum.ewm.requests.repository.EventConfirmedCount;
 import ru.practicum.ewm.requests.repository.ParticipationRequestRepository;
 
 import java.time.LocalDateTime;
@@ -35,11 +34,11 @@ public class RequestServiceImpl implements RequestService {
 
         EventDto event = eventFeignClient.getEvent(eventId);
 
-        if (Objects.equals(event.getInitiatorId(), userId)) {
+        if (Objects.equals(event.initiatorId(), userId)) {
             throw new ConflictException("Инициатор мероприятия не может выступать в роли участника!");
         }
 
-        if (!"PUBLISHED".equals(event.getState())) {
+        if (event.state() != EventStateDto.PUBLISHED) {
             throw new ConflictException("Подача запросов допускается только для опубликованных событий.");
         }
 
@@ -47,13 +46,13 @@ public class RequestServiceImpl implements RequestService {
             throw new ConflictException("Запрос на участие уже был отправлен.");
         }
 
-        if (event.getParticipantLimit() > 0) {
+        if (event.participantLimit() > 0) {
             long confirmed = requestRepository.countByEventIdAndStatus(
                     eventId,
                     RequestStatus.CONFIRMED
             );
 
-            if (confirmed >= event.getParticipantLimit()) {
+            if (confirmed >= event.participantLimit()) {
                 throw new ConflictException("Превышен лимит по числу участников!");
             }
         }
@@ -63,8 +62,8 @@ public class RequestServiceImpl implements RequestService {
         pr.setEventId(eventId);
         pr.setRequesterId(userId);
 
-        if (event.getParticipantLimit() == 0
-                || !Boolean.TRUE.equals(event.getRequestModeration())) {
+        if (event.participantLimit() == 0
+                || !Boolean.TRUE.equals(event.requestModeration())) {
             pr.setStatus(RequestStatus.CONFIRMED);
         } else {
             pr.setStatus(RequestStatus.PENDING);
@@ -124,7 +123,7 @@ public class RequestServiceImpl implements RequestService {
 
         for (ParticipationRequest participationRequest : requests) {
 
-            if ("CONFIRMED".equals(request.getStatus().name())) {
+            if (request.getStatus() == RequestUpdateStatus.CONFIRMED) {
 
                 participationRequest.setStatus(RequestStatus.CONFIRMED);
 
@@ -156,8 +155,8 @@ public class RequestServiceImpl implements RequestService {
                 )
                 .stream()
                 .collect(Collectors.toMap(
-                        row -> (Long) row[0],
-                        row -> (Long) row[1]
+                        EventConfirmedCount::getEventId,
+                        EventConfirmedCount::getCnt
                 ));
     }
 }
