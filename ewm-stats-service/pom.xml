@@ -41,6 +41,9 @@
         <module>stats-dto</module>
         <module>stats-client</module>
         <module>stats-server</module>
+        <module>stats-common</module>
+        <module>collector</module>
+        <module>aggregator</module>
     </modules>
 
 </project>
