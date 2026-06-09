@@ -12,6 +12,14 @@ public class GrpcTestClient {
 
     public static void main(String[] args) {
 
+        long userId = args.length > 0
+                ? Long.parseLong(args[0])
+                : 1L;
+
+        long eventId = args.length > 1
+                ? Long.parseLong(args[1])
+                : 100L;
+
         ManagedChannel channel = ManagedChannelBuilder
                 .forAddress("localhost", 9090)
                 .usePlaintext()
@@ -21,8 +29,8 @@ public class GrpcTestClient {
                 UserActionControllerGrpc.newBlockingStub(channel);
 
         UserActionProto request = UserActionProto.newBuilder()
-                .setUserId(1)
-                .setEventId(100)
+                .setUserId(userId)
+                .setEventId(eventId)
                 .setActionType(ActionTypeProto.ACTION_VIEW)
                 .setTimestamp(
                         Timestamp.newBuilder()

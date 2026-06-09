@@ -8,6 +8,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
+import ru.practicum.ewm.stats.avro.UserActionAvro;
+import ru.practicum.ewm.stats.serialization.AvroSerializer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,7 +21,7 @@ public class KafkaProducerConfig {
     private String bootstrapServers;
 
     @Bean
-    public ProducerFactory<String, String> producerFactory() {
+    public ProducerFactory<String, UserActionAvro> producerFactory() {
 
         Map<String, Object> config = new HashMap<>();
 
@@ -35,14 +37,14 @@ public class KafkaProducerConfig {
 
         config.put(
                 ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-                StringSerializer.class
+                AvroSerializer.class
         );
 
         return new DefaultKafkaProducerFactory<>(config);
     }
 
     @Bean
-    public KafkaTemplate<String, String> kafkaTemplate() {
+    public KafkaTemplate<String, UserActionAvro> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
 }

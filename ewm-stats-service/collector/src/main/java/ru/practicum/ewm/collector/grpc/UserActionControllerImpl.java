@@ -31,12 +31,7 @@ public class UserActionControllerImpl
 
         System.out.println("Created Avro object: " + action);
 
-        String payload =
-                "userId=" + action.getUserId()
-                        + ",eventId=" + action.getEventId()
-                        + ",action=" + action.getActionType();
-
-        producer.send(payload);
+        producer.send(action);
 
         responseObserver.onNext(Empty.getDefaultInstance());
         responseObserver.onCompleted();
