@@ -22,4 +22,12 @@ public class UserActionRepository {
     public Map<Long, Set<Long>> getUserEvents() {
         return userEvents;
     }
+
+    public Set<Long> getUserEvents(Long userId) {
+
+        return userEvents.getOrDefault(
+                userId,
+                new HashSet<>()
+        );
+    }
 }
