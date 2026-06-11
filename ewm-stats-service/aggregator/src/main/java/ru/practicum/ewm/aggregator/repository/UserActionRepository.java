@@ -3,31 +3,47 @@ package ru.practicum.ewm.aggregator.repository;
 import org.springframework.stereotype.Repository;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 @Repository
 public class UserActionRepository {
 
-    private final Map<Long, Set<Long>> userEvents = new HashMap<>();
+    private final Map<Long, Map<Long, Double>> userEvents =
+            new HashMap<>();
 
-    public void addAction(Long userId, Long eventId) {
+    public void addAction(
+            Long userId,
+            Long eventId,
+            double weight
+    ) {
 
         userEvents
-                .computeIfAbsent(userId, id -> new HashSet<>())
-                .add(eventId);
+                .computeIfAbsent(
+                        userId,
+                        id -> new HashMap<>()
+                )
+                .merge(
+                        eventId,
+                        weight,
+                        Math::max
+                );
     }
 
-    public Map<Long, Set<Long>> getUserEvents() {
+    public Map<Long, Map<Long, Double>> getUserEvents() {
         return userEvents;
     }
 
-    public Set<Long> getUserEvents(Long userId) {
+    public Map<Long, Double> getUserEvents(
+            Long userId
+    ) {
 
         return userEvents.getOrDefault(
                 userId,
-                new HashSet<>()
+                new HashMap<>()
         );
+    }
+
+    public Map<Long, Map<Long, Double>> getAll() {
+        return userEvents;
     }
 }

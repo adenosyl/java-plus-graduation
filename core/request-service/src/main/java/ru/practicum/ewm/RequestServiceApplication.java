@@ -8,6 +8,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @SpringBootApplication(
         scanBasePackages = {
                 "ru.practicum.ewm",
+                "ru.practicum.stats.client"
         }
 )
 @EnableFeignClients

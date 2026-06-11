@@ -21,6 +21,8 @@ import ru.practicum.ewm.events.util.OffsetBasedPageRequest;
 import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.exception.NotFoundException;
+import ru.practicum.ewm.stats.proto.recommendations.RecommendedEventProto;
+import ru.practicum.stats.client.AnalyzerClient;
 
 
 import java.time.LocalDateTime;
@@ -35,7 +37,7 @@ public class EventServiceImpl implements EventService {
     private final CategoryRepository categoryRepository;
     private final UserFeignClient userFeignClient;
     private final RequestFeignClient requestFeignClient;
-
+    private final AnalyzerClient analyzerClient;
     private final StatsFacade statsFacade;
 
     //PUBLIC
@@ -328,6 +330,27 @@ public class EventServiceImpl implements EventService {
                 event.getRequestModeration(),
                 EventStateDto.valueOf(event.getState().name())
         );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EventShortDto> getRecommendations(
+            Long userId,
+            Integer maxResults
+    ) {
+
+        return analyzerClient
+                .getRecommendations(
+                        userId,
+                        maxResults
+                )
+                .stream()
+                .map(RecommendedEventProto::getEventId)
+                .map(eventRepository::findById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(event -> toShortDtosWithMeta(List.of(event)).getFirst())
+                .toList();
     }
 
     private void applyUserUpdate(Event e, UpdateEventUserRequest dto) {

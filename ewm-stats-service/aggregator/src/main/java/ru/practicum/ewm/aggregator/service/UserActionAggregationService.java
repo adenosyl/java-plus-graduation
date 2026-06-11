@@ -3,24 +3,16 @@ package ru.practicum.ewm.aggregator.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.practicum.ewm.aggregator.kafka.EventSimilarityProducer;
-import ru.practicum.ewm.aggregator.repository.EventStatisticsRepository;
-import ru.practicum.ewm.aggregator.repository.PairStatisticsRepository;
-import ru.practicum.ewm.aggregator.repository.SimilarityRepository;
 import ru.practicum.ewm.aggregator.repository.UserActionRepository;
 import ru.practicum.ewm.stats.avro.EventSimilarityAvro;
 import ru.practicum.ewm.stats.avro.UserActionAvro;
-
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class UserActionAggregationService {
 
     private final UserActionRepository repository;
-    private final SimilarityRepository similarityRepository;
     private final EventSimilarityProducer producer;
-    private final EventStatisticsRepository eventStatisticsRepository;
-    private final PairStatisticsRepository pairStatisticsRepository;
 
     public void process(UserActionAvro action) {
 
@@ -29,14 +21,15 @@ public class UserActionAggregationService {
         Long userId = action.getUserId();
         Long eventId = action.getEventId();
 
-        repository.addAction(userId, eventId);
+        double weight =
+                getWeight(
+                        action.getActionType().toString()
+                );
 
-        eventStatisticsRepository.incrementEvent(
-                eventId
-        );
-
-        System.out.println(
-                eventStatisticsRepository.getEventViews()
+        repository.addAction(
+                userId,
+                eventId,
+                weight
         );
 
         System.out.println(repository.getUserEvents());
@@ -46,11 +39,10 @@ public class UserActionAggregationService {
 
     private void printPairs(Long userId) {
 
-        Set<Long> events =
-                repository.getUserEvents(userId);
-
         Long[] eventArray =
-                events.toArray(new Long[0]);
+                repository.getUserEvents(userId)
+                        .keySet()
+                        .toArray(new Long[0]);
 
         for (int i = 0; i < eventArray.length; i++) {
 
@@ -66,31 +58,23 @@ public class UserActionAggregationService {
 
     private void createSimilarity(Long first, Long second) {
 
-        pairStatisticsRepository.increment(
+        double sa = calculateSum(first);
+
+        double sb = calculateSum(second);
+
+        double sMin = calculateMinSum(
                 first,
                 second
         );
 
-        long pairCount =
-                pairStatisticsRepository.getCount(
-                        first,
-                        second
-                );
-
-        long viewsA =
-                eventStatisticsRepository.getViews(
-                        first
-                );
-
-        long viewsB =
-                eventStatisticsRepository.getViews(
-                        second
-                );
+        if (sa == 0 || sb == 0) {
+            return;
+        }
 
         double score =
-                (double) pairCount /
+                sMin /
                         Math.sqrt(
-                                viewsA * viewsB
+                                sa * sb
                         );
 
         EventSimilarityAvro similarity =
@@ -107,5 +91,66 @@ public class UserActionAggregationService {
         );
 
         producer.send(similarity);
+    }
+
+    private double calculateSum(Long eventId) {
+
+        double sum = 0.0;
+
+        for (var userEvents : repository.getAll().values()) {
+
+            sum += userEvents.getOrDefault(
+                    eventId,
+                    0.0
+            );
+        }
+
+        return sum;
+    }
+
+    private double calculateMinSum(
+            Long first,
+            Long second
+    ) {
+
+        double sum = 0.0;
+
+        for (var userEvents : repository.getAll().values()) {
+
+            double firstWeight =
+                    userEvents.getOrDefault(
+                            first,
+                            0.0
+                    );
+
+            double secondWeight =
+                    userEvents.getOrDefault(
+                            second,
+                            0.0
+                    );
+
+            sum += Math.min(
+                    firstWeight,
+                    secondWeight
+            );
+        }
+
+        return sum;
+    }
+
+    private double getWeight(
+            String actionType
+    ) {
+
+        return switch (actionType) {
+
+            case "ACTION_VIEW" -> 1.0;
+
+            case "ACTION_REGISTER" -> 2.0;
+
+            case "ACTION_LIKE" -> 3.0;
+
+            default -> 0.0;
+        };
     }
 }

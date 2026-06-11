@@ -52,4 +52,9 @@ public interface EventService {
     EventFullDto updateAdmin(long eventId, UpdateEventAdminRequest dto);
 
     EventDto getInternalEvent(Long eventId);
+
+    List<EventShortDto> getRecommendations(
+            Long userId,
+            Integer maxResults
+    );
 }
