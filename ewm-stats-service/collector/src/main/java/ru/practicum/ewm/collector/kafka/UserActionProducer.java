@@ -12,9 +12,21 @@ public class UserActionProducer {
     private final KafkaTemplate<String, UserActionAvro> kafkaTemplate;
 
     public void send(UserActionAvro action) {
+
         kafkaTemplate.send(
                 "stats.user-actions.v1",
                 action
-        );
+        ).whenComplete((result, ex) -> {
+
+            if (ex != null) {
+                System.err.println("SEND ERROR");
+                ex.printStackTrace();
+            } else {
+                System.out.println(
+                        "SENT TO KAFKA offset="
+                                + result.getRecordMetadata().offset()
+                );
+            }
+        });
     }
 }

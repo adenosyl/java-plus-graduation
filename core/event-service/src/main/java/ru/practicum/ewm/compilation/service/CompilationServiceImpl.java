@@ -17,7 +17,6 @@ import ru.practicum.ewm.events.dto.UserShortDto;
 import ru.practicum.ewm.events.mapper.EventMapper;
 import ru.practicum.ewm.events.model.Event;
 import ru.practicum.ewm.events.repository.EventRepository;
-import ru.practicum.ewm.events.service.StatsFacade;
 import ru.practicum.ewm.events.util.OffsetBasedPageRequest;
 import ru.practicum.ewm.exception.NotFoundException;
 
@@ -29,7 +28,6 @@ public class CompilationServiceImpl implements CompilationService {
 
     private final CompilationRepository compilationRepository;
     private final EventRepository eventRepository;
-    private final StatsFacade statsFacade;
 
     @Override
     public CompilationDto create(NewCompilationDto dto) {
@@ -118,14 +116,19 @@ public class CompilationServiceImpl implements CompilationService {
     }
 
     private List<EventShortDto> toShortDtosWithMeta(List<Event> events) {
-        if (events == null || events.isEmpty()) return List.of();
+        if (events == null || events.isEmpty()) {
+            return List.of();
+        }
 
         Map<Long, Long> confirmed = getConfirmedMap(events);
-        Map<Long, Long> views = getViewsMap(events);
 
         return events.stream().map(e -> {
+
             EventShortDto dto = EventMapper.toShortDto(e);
-            dto.setCategory(mapCategory(e.getCategory()));
+
+            dto.setCategory(
+                    mapCategory(e.getCategory())
+            );
 
             dto.setInitiator(
                     new UserShortDto(
@@ -134,28 +137,22 @@ public class CompilationServiceImpl implements CompilationService {
                     )
             );
 
-            dto.setConfirmedRequests(confirmed.getOrDefault(e.getId(), 0L));
-            dto.setViews(views.getOrDefault(e.getId(), 0L));
+            dto.setConfirmedRequests(
+                    confirmed.getOrDefault(
+                            e.getId(),
+                            0L
+                    )
+            );
+
+            dto.setRating(0.0);
+
             return dto;
+
         }).toList();
     }
 
     private Map<Long, Long> getConfirmedMap(List<Event> events) {
         return new HashMap<>();
-    }
-
-    private Map<Long, Long> getViewsMap(List<Event> events) {
-        List<String> uris = events.stream()
-                .map(e -> "/events/" + e.getId())
-                .toList();
-
-        Map<String, Long> uriViews = statsFacade.getViews(uris);
-
-        Map<Long, Long> result = new HashMap<>();
-        for (Event e : events) {
-            result.put(e.getId(), uriViews.getOrDefault("/events/" + e.getId(), 0L));
-        }
-        return result;
     }
 
     private CategoryDto mapCategory(Category c) {

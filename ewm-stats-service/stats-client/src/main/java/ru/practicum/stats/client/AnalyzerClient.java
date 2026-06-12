@@ -1,16 +1,12 @@
 package ru.practicum.stats.client;
 
-import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Component;
 import ru.practicum.ewm.stats.proto.recommendations.*;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 @Component
-@RequiredArgsConstructor
 public class AnalyzerClient {
 
     @GrpcClient("analyzer")
@@ -34,6 +30,31 @@ public class AnalyzerClient {
                 stub.getRecommendationsForUser(request);
 
         iterator.forEachRemaining(result::add);
+
+        return result;
+    }
+
+    public Map<Long, Double> getInteractionsCount(
+            List<Long> eventIds
+    ) {
+
+        InteractionsCountRequestProto request =
+                InteractionsCountRequestProto.newBuilder()
+                        .addAllEventId(eventIds)
+                        .build();
+
+        Iterator<RecommendedEventProto> iterator =
+                stub.getInteractionsCount(request);
+
+        Map<Long, Double> result =
+                new HashMap<>();
+
+        iterator.forEachRemaining(response ->
+                result.put(
+                        response.getEventId(),
+                        response.getScore()
+                )
+        );
 
         return result;
     }

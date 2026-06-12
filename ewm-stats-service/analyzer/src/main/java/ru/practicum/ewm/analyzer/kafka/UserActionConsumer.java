@@ -16,11 +16,11 @@ public class UserActionConsumer {
     @KafkaListener(
             topics = "stats.user-actions.v1",
             groupId = "analyzer",
-            containerFactory =
-                    "userActionKafkaListenerContainerFactory"
+            containerFactory = "userActionKafkaListenerContainerFactory"
     )
-
     public void consume(UserActionAvro action) {
+
+        System.out.println("CONSUMED: " + action);
 
         UserActionEntity entity =
                 UserActionEntity.builder()
@@ -32,8 +32,6 @@ public class UserActionConsumer {
 
         repository.save(entity);
 
-        System.out.println(
-                "Saved action: " + entity
-        );
+        System.out.println("Saved action: " + entity);
     }
 }
