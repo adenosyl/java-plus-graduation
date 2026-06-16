@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: aggregator
+
+  kafka:
+    bootstrap-servers: localhost:29092
+
+    consumer:
+      auto-offset-reset: earliest
+
+  cloud:
+    config:
+      enabled: false
+
+eureka:
+  client:
+    enabled: false

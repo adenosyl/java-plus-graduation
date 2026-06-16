@@ -28,6 +28,7 @@ public class RequestInternalController {
     public EventRequestStatusUpdateResult changeRequestStatus(
             @PathVariable Long eventId,
             @RequestBody EventRequestStatusUpdateRequest request) {
+
         return requestService.changeRequestStatus(eventId, request);
     }
 
@@ -36,5 +37,12 @@ public class RequestInternalController {
             @RequestBody List<Long> eventIds) {
 
         return requestService.getConfirmedCounts(eventIds);
+    }
+
+    @GetMapping("/users/{userId}/requests")
+    public List<ParticipationRequestDto> getUserRequests(
+            @PathVariable Long userId) {
+
+        return requestService.getUserRequests(userId);
     }
 }

@@ -25,14 +25,21 @@ public interface EventService {
                                         int size,
                                         HttpServletRequest request);
 
-    EventFullDto getPublicEvent(long id, HttpServletRequest request);
-
     // private
     List<EventShortDto> getUserEvents(long userId, int from, int size);
 
     EventFullDto addEvent(long userId, NewEventDto dto);
 
-    EventFullDto getUserEvent(long userId, long eventId);
+    EventFullDto getUserEvent(
+            long userId,
+            long eventId
+    );
+
+    EventFullDto getPublicEvent(
+            long id,
+            Long userId,
+            HttpServletRequest request
+    );
 
     EventFullDto updateUserEvent(long userId, long eventId, UpdateEventUserRequest dto);
 
@@ -52,4 +59,11 @@ public interface EventService {
     EventFullDto updateAdmin(long eventId, UpdateEventAdminRequest dto);
 
     EventDto getInternalEvent(Long eventId);
+
+    List<EventShortDto> getRecommendations(
+            Long userId,
+            Integer maxResults
+    );
+
+    void likeEvent(Long eventId, Long userId);
 }

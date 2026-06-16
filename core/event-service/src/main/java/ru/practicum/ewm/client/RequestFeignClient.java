@@ -27,4 +27,9 @@ public interface RequestFeignClient {
     Map<Long, Long> getConfirmedCounts(
             @RequestBody List<Long> eventIds
     );
+
+    @GetMapping("/internal/events/users/{userId}/requests")
+    List<ParticipationRequestDto> getUserRequests(
+            @PathVariable Long userId
+    );
 }

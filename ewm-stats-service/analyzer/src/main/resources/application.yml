@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: analyzer
+
+  kafka:
+    bootstrap-servers: localhost:29092
+
+    consumer:
+      auto-offset-reset: earliest
+
+  cloud:
+    config:
+      enabled: false
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/stats
+    username: stats
+    password: stats
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+    show-sql: true
+
+eureka:
+  client:
+    enabled: false
+
+grpc:
+  server:
+    port: 9097

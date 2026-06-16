@@ -1,0 +1,10 @@
+grpc:
+  client:
+
+    collector:
+      address: static://localhost:9090
+      negotiationType: plaintext
+
+    analyzer:
+      address: static://localhost:9097
+      negotiationType: plaintext

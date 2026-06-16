@@ -13,6 +13,8 @@ import ru.practicum.ewm.requests.model.ParticipationRequest;
 import ru.practicum.ewm.requests.model.RequestStatus;
 import ru.practicum.ewm.requests.repository.EventConfirmedCount;
 import ru.practicum.ewm.requests.repository.ParticipationRequestRepository;
+import ru.practicum.ewm.stats.proto.collector.ActionTypeProto;
+import ru.practicum.stats.client.CollectorClient;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -27,6 +29,7 @@ public class RequestServiceImpl implements RequestService {
 
     private final EventFeignClient eventFeignClient;
     private final ParticipationRequestRepository requestRepository;
+    private final CollectorClient collectorClient;
 
     @Override
     @Transactional
@@ -70,6 +73,12 @@ public class RequestServiceImpl implements RequestService {
         }
 
         ParticipationRequest saved = requestRepository.save(pr);
+
+        collectorClient.collect(
+                userId,
+                eventId,
+                ActionTypeProto.ACTION_REGISTER
+        );
 
         return RequestMapper.toDto(saved);
     }
